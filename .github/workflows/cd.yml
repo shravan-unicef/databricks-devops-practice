@@ -1,28 +1,60 @@
-name: Deploy to Databricks (Dev)
-
+name: Databricks Single Workspace CI/CD
 on:
   push:
-    branches:
-      - dev   # Run only when pushing to dev branch
+    branches: [ "dev", "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
 
 jobs:
-  deploy:
+  # Both jobs sync to the same workspace and repo path.
+  # THIS IS NOT A PROFESSIONAL SETUP. It is for demonstration only.
+  
+  sync-workspace:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-
-      - name: Install Databricks CLI
-        run: pip install databricks-cli
-
-      - name: Verify Databricks connection
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Install tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install databricks-cli
+          sudo apt-get update && sudo apt-get install -y jq
+      - name: Configure Databricks
         env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_DEV_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_DEV_TOKEN }}
-        run: databricks workspace ls /
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: echo "Authentication via env"
+      - name: Ensure Repo exists (create if missing)
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          REPO_PATH: ${{ secrets.REPO_PATH }}
+          GIT_URL: ${{ secrets.GIT_URL }}
+        run: |
+          set -e
+          if databricks repos get --path "$REPO_PATH" >/dev/null 2>&1; then
+            echo "Repo exists at $REPO_PATH"
+          else
+            echo "Creating Repo at $REPO_PATH"
+            databricks repos create --url "$GIT_URL" --provider github --path "$REPO_PATH"
+          fi
+      - name: Update Repo to current branch (pull latest)
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          REPO_PATH: ${{ secrets.REPO_PATH }}
+        run: |
+          databricks repos update --path "$REPO_PATH" --branch ${{ github.ref_name }}
+  
+  # PR into main → run a placeholder validation job (optional)
+  validate-pr:
+    if: github.event_name == 'pull_request' && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Placeholder validation
+        run: |
+          echo "This job can be used for linting or tests."
+          echo "Passing for now."

@@ -3,11 +3,14 @@ name: Deploy to Databricks (Dev)
 on:
   push:
     branches:
-      - dev   # Run workflow only when pushing to dev branch
+      - dev   # Only run on dev branch
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_DEV_HOST }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_DEV_TOKEN }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -15,12 +18,5 @@ jobs:
       - name: Install Databricks CLI
         run: pip install databricks-cli
 
-      - name: Configure Databricks CLI
-        run: |
-          databricks configure --token <<EOF
-          ${{ secrets.DATABRICKS_DEV_HOST }}
-          ${{ secrets.DATABRICKS_DEV_TOKEN }}
-          EOF
-
-      - name: Test connection to Databricks
+      - name: Test connection
         run: databricks workspace ls /

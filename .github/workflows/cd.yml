@@ -22,13 +22,13 @@ jobs:
           sudo apt-get update && sudo apt-get install -y jq
       - name: Configure Databricks
         env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_DEV_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_DEV_TOKEN }}
         run: echo "Authentication via env"
       - name: Ensure Repo exists (create if missing)
         env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_DEV_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_DEV_TOKEN }}
           REPO_PATH: ${{ secrets.REPO_PATH }}
           GIT_URL: ${{ secrets.GIT_URL }}
         run: |
@@ -41,8 +41,8 @@ jobs:
           fi
       - name: Update Repo to current branch (pull latest)
         env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_DEV_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_DEV_TOKEN }}
           REPO_PATH: ${{ secrets.REPO_PATH }}
         run: |
           databricks repos update --path "$REPO_PATH" --branch ${{ github.ref_name }}
